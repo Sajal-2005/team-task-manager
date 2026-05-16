@@ -19,7 +19,9 @@ exports.getTasks = async (req, res, next) => {
 
     const tasks = await Task.find(query)
       .populate('assignedTo', 'name email')
-      .populate('projectId', 'title');
+      .populate('projectId', 'title')
+      .populate('comments.user', 'name email')
+      .sort({ createdAt: -1 });
       
     res.json(tasks);
   } catch (error) {
@@ -34,7 +36,8 @@ exports.getTaskById = async (req, res, next) => {
   try {
     const task = await Task.findById(req.params.id)
       .populate('assignedTo', 'name email')
-      .populate('projectId', 'title');
+      .populate('projectId', 'title')
+      .populate('comments.user', 'name email');
       
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
@@ -156,6 +159,49 @@ exports.deleteTask = async (req, res, next) => {
 
     await Task.deleteOne({ _id: req.params.id });
     res.json({ message: 'Task removed' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Add comment to task
+// @route   POST /api/tasks/:id/comments
+// @access  Private
+exports.addComment = async (req, res, next) => {
+  try {
+    const { text } = req.body;
+    
+    if (!text) {
+      return res.status(400).json({ message: 'Comment text is required' });
+    }
+
+    const task = await Task.findById(req.params.id);
+    
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Admins or the assigned user or team members can comment
+    // Simplest logic: if they can see the task, they can comment.
+    // getTaskById already checks visibility, but here we just check if they are member of project or admin
+    if (req.user.role !== 'admin') {
+      const proj = await Project.findById(task.projectId);
+      if (!proj.teamMembers.includes(req.user.id)) {
+        return res.status(403).json({ message: 'Not authorized to comment on this task' });
+      }
+    }
+
+    const comment = {
+      text,
+      user: req.user.id
+    };
+
+    task.comments.push(comment);
+    await task.save();
+
+    // Re-fetch to populate the user info
+    const updatedTask = await Task.findById(task._id).populate('comments.user', 'name email');
+    res.status(201).json(updatedTask.comments);
   } catch (error) {
     next(error);
   }

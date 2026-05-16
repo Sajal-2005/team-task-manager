@@ -4,7 +4,8 @@ const {
   getTaskById, 
   createTask, 
   updateTask, 
-  deleteTask 
+  deleteTask,
+  addComment
 } = require('../controllers/taskController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -18,5 +19,8 @@ router.route('/:id')
   .get(protect, getTaskById)
   .put(protect, updateTask) // Internal logic handles Admin vs Member permissions
   .delete(protect, authorize('admin'), deleteTask);
+
+router.route('/:id/comments')
+  .post(protect, addComment);
 
 module.exports = router;

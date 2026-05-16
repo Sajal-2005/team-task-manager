@@ -38,7 +38,24 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'User',
     required: true
-  }
+  },
+  comments: [
+    {
+      text: {
+        type: String,
+        required: true
+      },
+      user: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

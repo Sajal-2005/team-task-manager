@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
@@ -32,6 +33,7 @@ const ProjectDetail = () => {
   const [projectForm, setProjectForm] = useState({ title: '', description: '' });
   
   const [memberToAdd, setMemberToAdd] = useState('');
+  const [commentText, setCommentText] = useState('');
 
   const isAdmin = user?.role === 'admin';
 
@@ -154,6 +156,46 @@ const ProjectDetail = () => {
     }
   };
 
+  const handlePostComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim() || !editingTask) return;
+    try {
+      const { data } = await api.post(`/tasks/${editingTask._id}/comments`, { text: commentText });
+      setEditingTask({ ...editingTask, comments: data });
+      setCommentText('');
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to post comment');
+    }
+  };
+
+  const onDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const newStatus = destination.droppableId;
+    const draggedTask = tasks.find(t => t._id === draggableId);
+    
+    if (!isAdmin && draggedTask.assignedTo?._id !== user._id) {
+       alert("You are not authorized to move this task.");
+       return;
+    }
+
+    // Optimistically update
+    setTasks(prevTasks => prevTasks.map(t => t._id === draggableId ? { ...t, status: newStatus } : t));
+
+    try {
+      await api.put(`/tasks/${draggableId}`, { status: newStatus });
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      fetchTasks(); // Revert
+    }
+  };
+
   const openEditModal = (task) => {
     setEditingTask(task);
     setTaskForm({
@@ -181,52 +223,62 @@ const ProjectDetail = () => {
           </div>
         </CardHeader>
         
-        <CardContent className="flex flex-col gap-4 flex-1">
-          {columnTasks.map(task => (
-            <div key={task._id} className={`p-4 rounded-xl bg-background/60 border ${task.isOverdue ? 'border-destructive/50' : 'border-white/5'}`}>
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-semibold text-sm flex items-center flex-wrap gap-2">
-                  {task.title}
-                  {task.isOverdue && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">OVERDUE</Badge>}
-                </h4>
-                {isAdmin && (
-                  <div className="flex gap-2">
-                    <Edit2 className="w-4 h-4 cursor-pointer text-muted-foreground hover:text-primary transition-colors" onClick={() => openEditModal(task)} />
-                    <Trash2 className="w-4 h-4 cursor-pointer text-destructive hover:text-destructive/80 transition-colors" onClick={() => handleDeleteTask(task._id)} />
-                  </div>
-                )}
-              </div>
-              {task.description && <p className="text-xs text-muted-foreground mb-4 line-clamp-3">{task.description}</p>}
-              
-              <div className="flex justify-between items-center mt-auto pt-2">
-                <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded-md">
-                  {task.assignedTo?.name || 'Unassigned'}
-                </span>
-                
-                { (isAdmin || task.assignedTo?._id === user._id) ? (
-                  <select 
-                    value={task.status} 
-                    onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                    className="h-7 text-xs rounded-md border border-white/10 bg-background px-2 focus:ring-1 focus:ring-primary focus:outline-none"
-                  >
-                    <option value="pending">Todo</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Done</option>
-                  </select>
-                ) : (
-                  <Badge variant={task.status === 'completed' ? 'default' : task.status === 'in-progress' ? 'secondary' : 'outline'}>
-                    {task.status === 'pending' ? 'Todo' : task.status === 'in-progress' ? 'In Progress' : 'Done'}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          ))}
-          {columnTasks.length === 0 && (
-            <div className="text-center py-12 text-sm text-muted-foreground border border-dashed border-white/10 rounded-xl">
-              No tasks
-            </div>
+        <Droppable droppableId={statusValue}>
+          {(provided, snapshot) => (
+            <CardContent 
+              className={`flex flex-col gap-4 flex-1 pb-8 ${snapshot.isDraggingOver ? 'bg-primary/5 rounded-b-lg' : ''} transition-colors`}
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              {columnTasks.map((task, index) => (
+                <Draggable key={task._id} draggableId={task._id} index={index} isDragDisabled={!isAdmin && task.assignedTo?._id !== user._id}>
+                  {(provided, snapshot) => (
+                    <div 
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`p-4 rounded-xl bg-background/80 border ${task.isOverdue ? 'border-destructive/50' : 'border-white/5'} ${snapshot.isDragging ? 'shadow-lg shadow-primary/20 ring-1 ring-primary' : ''}`}
+                    >
+                      <div className="flex justify-between items-start mb-2 gap-2">
+                        <h4 className="font-semibold text-sm leading-tight flex-1">
+                          {task.title}
+                          {task.isOverdue && <Badge variant="destructive" className="ml-2 text-[10px] px-1.5 py-0">OVERDUE</Badge>}
+                        </h4>
+                        <div className="flex gap-2 shrink-0">
+                          <Edit2 className="w-4 h-4 cursor-pointer text-muted-foreground hover:text-primary transition-colors" onClick={() => openEditModal(task)} />
+                          {isAdmin && <Trash2 className="w-4 h-4 cursor-pointer text-destructive hover:text-destructive/80 transition-colors" onClick={() => handleDeleteTask(task._id)} />}
+                        </div>
+                      </div>
+                      {task.description && <p className="text-xs text-muted-foreground mb-4 line-clamp-3">{task.description}</p>}
+                      
+                      <div className="flex justify-between items-center mt-auto pt-2 border-t border-white/5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded-md">
+                            {task.assignedTo?.name || 'Unassigned'}
+                          </span>
+                          {task.comments?.length > 0 && (
+                            <span className="text-[10px] text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-white/10">
+                              {task.comments.length} 💬
+                            </span>
+                          )}
+                        </div>
+                        <Badge variant={task.status === 'completed' ? 'default' : task.status === 'in-progress' ? 'secondary' : 'outline'}>
+                          {task.priority}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+              {columnTasks.length === 0 && !snapshot.isDraggingOver && (
+                <div className="text-center py-12 text-sm text-muted-foreground border border-dashed border-white/10 rounded-xl">
+                  Drop tasks here
+                </div>
+              )}
+            </CardContent>
           )}
-        </CardContent>
+        </Droppable>
       </Card>
     );
   };
@@ -314,11 +366,13 @@ const ProjectDetail = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {renderColumn('To Do', 'pending')}
-        {renderColumn('In Progress', 'in-progress')}
-        {renderColumn('Done', 'completed')}
-      </div>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {renderColumn('To Do', 'pending')}
+          {renderColumn('In Progress', 'in-progress')}
+          {renderColumn('Done', 'completed')}
+        </div>
+      </DragDropContext>
 
       {showTaskModal && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -385,11 +439,42 @@ const ProjectDetail = () => {
                     ))}
                   </select>
                 </div>
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-3 pt-4 border-b border-white/10 pb-4">
                   <Button type="button" variant="outline" onClick={() => { setShowTaskModal(false); setEditingTask(null); }}>Cancel</Button>
-                  <Button type="submit">{editingTask ? 'Update' : 'Create'}</Button>
+                  <Button type="submit">{editingTask ? 'Update Task' : 'Create Task'}</Button>
                 </div>
               </form>
+
+              {/* Comments Section */}
+              {editingTask && (
+                <div className="mt-6 space-y-4">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Comments</h3>
+                  <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                    {editingTask.comments?.map((c, i) => (
+                      <div key={i} className="bg-background/40 p-3 rounded-lg border border-white/5">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-medium text-primary">{c.user?.name || 'Unknown'}</span>
+                          <span className="text-[10px] text-muted-foreground">{new Date(c.createdAt).toLocaleDateString()} {new Date(c.createdAt).toLocaleTimeString()}</span>
+                        </div>
+                        <p className="text-xs">{c.text}</p>
+                      </div>
+                    ))}
+                    {(!editingTask.comments || editingTask.comments.length === 0) && (
+                      <p className="text-xs text-muted-foreground italic">No comments yet.</p>
+                    )}
+                  </div>
+                  <form onSubmit={handlePostComment} className="flex gap-2">
+                    <Input 
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Type a comment..." 
+                      className="bg-background/50 h-9"
+                    />
+                    <Button type="submit" size="sm" disabled={!commentText.trim()}>Post</Button>
+                  </form>
+                </div>
+              )}
+
             </CardContent>
           </Card>
         </div>
