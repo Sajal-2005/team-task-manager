@@ -3,6 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { Plus, Trash2, Edit2, UserPlus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -162,201 +167,231 @@ const ProjectDetail = () => {
     setShowTaskModal(true);
   };
 
-  if (!project) return <div>Loading project...</div>;
+  if (!project) return <div className="p-8">Loading project...</div>;
 
   const renderColumn = (title, statusValue) => {
     const columnTasks = tasks.filter(t => t.status === statusValue);
     
     return (
-      <div className="glass-panel" style={{ padding: '1.5rem', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
-          <h3 style={{ margin: 0 }}>{title}</h3>
-          <span className="badge" style={{ background: 'var(--glass-border)' }}>{columnTasks.length}</span>
-        </div>
+      <Card className="flex flex-col bg-card/50 backdrop-blur-sm border-white/10 min-h-[400px]">
+        <CardHeader className="pb-3 border-b border-white/5 mb-4">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">{title}</CardTitle>
+            <Badge variant="secondary">{columnTasks.length}</Badge>
+          </div>
+        </CardHeader>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
+        <CardContent className="flex flex-col gap-4 flex-1">
           {columnTasks.map(task => (
-            <div key={task._id} style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem', borderRadius: '8px', border: `1px solid ${task.isOverdue ? 'rgba(239, 68, 68, 0.5)' : 'var(--glass-border)'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>
+            <div key={task._id} className={`p-4 rounded-xl bg-background/60 border ${task.isOverdue ? 'border-destructive/50' : 'border-white/5'}`}>
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-semibold text-sm flex items-center flex-wrap gap-2">
                   {task.title}
-                  {task.isOverdue && <span style={{ color: 'var(--danger)', fontSize: '0.7rem', marginLeft: '0.5rem' }}>OVERDUE</span>}
+                  {task.isOverdue && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">OVERDUE</Badge>}
                 </h4>
                 {isAdmin && (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <Edit2 size={14} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => openEditModal(task)} />
-                    <Trash2 size={14} style={{ cursor: 'pointer', color: 'var(--danger)' }} onClick={() => handleDeleteTask(task._id)} />
+                  <div className="flex gap-2">
+                    <Edit2 className="w-4 h-4 cursor-pointer text-muted-foreground hover:text-primary transition-colors" onClick={() => openEditModal(task)} />
+                    <Trash2 className="w-4 h-4 cursor-pointer text-destructive hover:text-destructive/80 transition-colors" onClick={() => handleDeleteTask(task._id)} />
                   </div>
                 )}
               </div>
-              {task.description && <p style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>{task.description}</p>}
+              {task.description && <p className="text-xs text-muted-foreground mb-4 line-clamp-3">{task.description}</p>}
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+              <div className="flex justify-between items-center mt-auto pt-2">
+                <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded-md">
                   {task.assignedTo?.name || 'Unassigned'}
                 </span>
                 
-                {/* Status Dropdown (Members can change their own tasks, Admins can change any) */}
                 { (isAdmin || task.assignedTo?._id === user._id) ? (
                   <select 
                     value={task.status} 
                     onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                    style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.75rem', marginBottom: 0, height: 'auto', borderRadius: '4px' }}
+                    className="h-7 text-xs rounded-md border border-white/10 bg-background px-2 focus:ring-1 focus:ring-primary focus:outline-none"
                   >
                     <option value="pending">Todo</option>
                     <option value="in-progress">In Progress</option>
                     <option value="completed">Done</option>
                   </select>
                 ) : (
-                  <span className={`badge ${task.status === 'completed' ? 'badge-done' : task.status === 'in-progress' ? 'badge-progress' : 'badge-todo'}`}>
+                  <Badge variant={task.status === 'completed' ? 'default' : task.status === 'in-progress' ? 'secondary' : 'outline'}>
                     {task.status === 'pending' ? 'Todo' : task.status === 'in-progress' ? 'In Progress' : 'Done'}
-                  </span>
+                  </Badge>
                 )}
               </div>
             </div>
           ))}
           {columnTasks.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+            <div className="text-center py-12 text-sm text-muted-foreground border border-dashed border-white/10 rounded-xl">
               No tasks
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   };
 
   return (
-    <div className="animate-fade-in">
-      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1, marginRight: '2rem' }}>
-            {editProjectMode ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '600px' }}>
-                <input 
-                  type="text" 
-                  value={projectForm.title} 
-                  onChange={(e) => setProjectForm({...projectForm, title: e.target.value})}
-                  style={{ fontSize: '1.5rem', fontWeight: 'bold' }}
-                />
-                <textarea 
-                  value={projectForm.description} 
-                  onChange={(e) => setProjectForm({...projectForm, description: e.target.value})}
-                  rows="3"
-                />
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn btn-primary" onClick={handleUpdateProject}>Save</button>
-                  <button className="btn btn-outline" onClick={() => { setEditProjectMode(false); setProjectForm({ title: project.title, description: project.description }); }}>Cancel</button>
+    <div className="animate-fade-in space-y-8">
+      <Card className="bg-card/50 backdrop-blur-sm border-white/10">
+        <CardContent className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+            <div className="flex-1 w-full">
+              {editProjectMode ? (
+                <div className="space-y-4 max-w-2xl">
+                  <Input 
+                    type="text" 
+                    value={projectForm.title} 
+                    onChange={(e) => setProjectForm({...projectForm, title: e.target.value})}
+                    className="text-2xl font-bold h-14 bg-background/50 border-white/10"
+                  />
+                  <textarea 
+                    value={projectForm.description} 
+                    onChange={(e) => setProjectForm({...projectForm, description: e.target.value})}
+                    rows="3"
+                    className="flex w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  />
+                  <div className="flex gap-2">
+                    <Button onClick={handleUpdateProject}>Save</Button>
+                    <Button variant="outline" onClick={() => { setEditProjectMode(false); setProjectForm({ title: project.title, description: project.description }); }}>Cancel</Button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  {project.title}
-                  {isAdmin && <Edit2 size={18} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setEditProjectMode(true)} />}
-                </h2>
-                <p style={{ fontSize: '1.1rem', maxWidth: '800px' }}>{project.description}</p>
-              </>
-            )}
-          </div>
-          
-          {isAdmin && (
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => { setEditingTask(null); setShowTaskModal(true); }}>
-                <Plus size={18} /> Add Task
-              </button>
-              <button className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={handleDeleteProject}>
-                <Trash2 size={18} /> Delete Project
-              </button>
+              ) : (
+                <>
+                  <h2 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
+                    {project.title}
+                    {isAdmin && <Edit2 className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-primary transition-colors" onClick={() => setEditProjectMode(true)} />}
+                  </h2>
+                  <p className="text-lg text-muted-foreground max-w-3xl">{project.description}</p>
+                </>
+              )}
             </div>
-          )}
-        </div>
-        
-        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ fontWeight: 500 }}>Team Members ({project.teamMembers?.length || 0})</span>
+            
             {isAdmin && (
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <select value={memberToAdd} onChange={(e) => setMemberToAdd(e.target.value)} style={{ width: '200px', marginBottom: 0, padding: '0.4rem' }}>
-                  <option value="">Select member...</option>
-                  {allUsers.filter(u => !project.teamMembers.find(m => m._id === u._id)).map(u => (
-                    <option key={u._id} value={u._id}>{u.name}</option>
-                  ))}
-                </select>
-                <button className="btn btn-outline" onClick={handleAddMember} disabled={!memberToAdd} style={{ padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <UserPlus size={16} /> Add
-                </button>
+              <div className="flex gap-3 flex-wrap justify-start md:justify-end shrink-0">
+                <Button onClick={() => { setEditingTask(null); setShowTaskModal(true); }} className="gap-2">
+                  <Plus className="w-4 h-4" /> Add Task
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteProject} className="gap-2">
+                  <Trash2 className="w-4 h-4" /> Delete Project
+                </Button>
               </div>
             )}
           </div>
           
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {project.teamMembers?.map(m => (
-              <span key={m._id} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.3rem 0.8rem', borderRadius: '99px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {m.name}
-                {isAdmin && <X size={14} style={{ cursor: 'pointer', color: 'var(--danger)' }} onClick={() => handleRemoveMember(m._id)} />}
-              </span>
-            ))}
-            {project.teamMembers?.length === 0 && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No members added yet.</span>}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <span className="font-semibold text-lg">Team Members ({project.teamMembers?.length || 0})</span>
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <select 
+                    value={memberToAdd} 
+                    onChange={(e) => setMemberToAdd(e.target.value)} 
+                    className="h-9 w-48 rounded-md border border-white/10 bg-background px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">Select member...</option>
+                    {allUsers.filter(u => !project.teamMembers.find(m => m._id === u._id)).map(u => (
+                      <option key={u._id} value={u._id}>{u.name}</option>
+                    ))}
+                  </select>
+                  <Button variant="outline" size="sm" onClick={handleAddMember} disabled={!memberToAdd} className="gap-2">
+                    <UserPlus className="w-4 h-4" /> Add
+                  </Button>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              {project.teamMembers?.map(m => (
+                <Badge key={m._id} variant="secondary" className="px-3 py-1.5 text-sm gap-2">
+                  {m.name}
+                  {isAdmin && <X className="w-3.5 h-3.5 cursor-pointer text-muted-foreground hover:text-destructive transition-colors" onClick={() => handleRemoveMember(m._id)} />}
+                </Badge>
+              ))}
+              {project.teamMembers?.length === 0 && <span className="text-sm text-muted-foreground">No members added yet.</span>}
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {renderColumn('To Do', 'pending')}
         {renderColumn('In Progress', 'in-progress')}
         {renderColumn('Done', 'completed')}
       </div>
 
       {showTaskModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ padding: '2rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '1.5rem' }}>{editingTask ? 'Edit Task' : 'Create New Task'}</h3>
-            <form onSubmit={handleTaskSubmit}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Title</label>
-                <input type="text" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} required />
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Description</label>
-                <textarea value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} rows="3" />
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label>Status</label>
-                  <select value={taskForm.status} onChange={e => setTaskForm({...taskForm, status: e.target.value})}>
-                    <option value="pending">Todo</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Done</option>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md bg-card/95 shadow-2xl border-white/10 max-h-[90vh] flex flex-col">
+            <CardHeader>
+              <CardTitle>{editingTask ? 'Edit Task' : 'Create New Task'}</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-y-auto">
+              <form onSubmit={handleTaskSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input type="text" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} required className="bg-background/50" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <textarea 
+                    value={taskForm.description} 
+                    onChange={e => setTaskForm({...taskForm, description: e.target.value})} 
+                    rows="3" 
+                    className="flex w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1 space-y-2">
+                    <Label>Status</Label>
+                    <select 
+                      value={taskForm.status} 
+                      onChange={e => setTaskForm({...taskForm, status: e.target.value})}
+                      className="flex h-10 w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="pending">Todo</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Done</option>
+                    </select>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label>Priority</Label>
+                    <select 
+                      value={taskForm.priority} 
+                      onChange={e => setTaskForm({...taskForm, priority: e.target.value})}
+                      className="flex h-10 w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Due Date</Label>
+                  <Input type="date" value={taskForm.dueDate} onChange={e => setTaskForm({...taskForm, dueDate: e.target.value})} min={!editingTask ? new Date().toISOString().split("T")[0] : undefined} className="bg-background/50" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Assign To (Members Only)</Label>
+                  <select 
+                    value={taskForm.assignedTo} 
+                    onChange={e => setTaskForm({...taskForm, assignedTo: e.target.value})} 
+                    required
+                    className="flex h-10 w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Select a member...</option>
+                    {project.teamMembers.map(m => (
+                      <option key={m._id} value={m._id}>{m.name}</option>
+                    ))}
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label>Priority</label>
-                  <select value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value})}>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => { setShowTaskModal(false); setEditingTask(null); }}>Cancel</Button>
+                  <Button type="submit">{editingTask ? 'Update' : 'Create'}</Button>
                 </div>
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Due Date</label>
-                <input type="date" value={taskForm.dueDate} onChange={e => setTaskForm({...taskForm, dueDate: e.target.value})} min={!editingTask ? new Date().toISOString().split("T")[0] : undefined} />
-              </div>
-              <div style={{ marginBottom: '2rem' }}>
-                <label>Assign To (Members Only)</label>
-                <select value={taskForm.assignedTo} onChange={e => setTaskForm({...taskForm, assignedTo: e.target.value})} required>
-                  <option value="">Select a member...</option>
-                  {project.teamMembers.map(m => (
-                    <option key={m._id} value={m._id}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-outline" onClick={() => { setShowTaskModal(false); setEditingTask(null); }}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editingTask ? 'Update' : 'Create'}</button>
-              </div>
-            </form>
-          </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

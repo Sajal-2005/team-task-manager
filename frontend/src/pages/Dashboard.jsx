@@ -3,6 +3,8 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { Link } from 'react-router-dom';
 import { CheckCircle, Clock, Layout, AlertCircle, TrendingUp, Users, List, PlayCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -25,8 +27,8 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
-  if (loading) return <div className="animate-fade-in">Loading dashboard...</div>;
-  if (error) return <div className="animate-fade-in" style={{color: 'var(--danger)'}}>{error}</div>;
+  if (loading) return <div className="animate-fade-in p-8">Loading dashboard...</div>;
+  if (error) return <div className="animate-fade-in p-8 text-destructive">{error}</div>;
 
   const isAdmin = user?.role === 'admin';
   
@@ -44,119 +46,133 @@ const Dashboard = () => {
   const recentTasks = isAdmin ? stats.recentTasks : null;
   const progress = isAdmin ? null : stats.personalProgress; 
 
-  const Card = ({ title, value, icon, color }) => (
-    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-      <div style={{ padding: '1rem', background: `rgba(${color}, 0.2)`, borderRadius: '12px' }}>
-        {icon}
-      </div>
-      <div>
-        <h3 style={{ margin: 0, fontSize: '1.5rem' }}>{value}</h3>
-        <p style={{ margin: 0, fontSize: '0.9rem' }}>{title}</p>
-      </div>
-    </div>
+  const StatCard = ({ title, value, icon, iconColorClass, bgColorClass }) => (
+    <Card className="border-white/10 bg-card/50 backdrop-blur-sm">
+      <CardContent className="p-6 flex items-center gap-4">
+        <div className={`p-3 rounded-xl ${bgColorClass}`}>
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-3xl font-bold">{value}</h3>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 
+  const getStatusBadgeVariant = (status) => {
+    switch(status) {
+      case 'completed': return 'default'; // primary color
+      case 'in-progress': return 'secondary'; // secondary color
+      case 'pending': return 'outline'; // bordered
+      default: return 'outline';
+    }
+  };
+
   return (
-    <div className="animate-fade-in">
-      <div style={{ marginBottom: '2rem' }}>
-        <h2>Welcome, {user?.name}!</h2>
-        <p>Here's your {isAdmin ? 'administrative ' : ''}overview for today.</p>
+    <div className="animate-fade-in space-y-8">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Welcome, {user?.name}!</h2>
+        <p className="text-muted-foreground mt-2">Here's your {isAdmin ? 'administrative ' : ''}overview for today.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-        <Card title={isAdmin ? "Total Projects" : "Assigned Projects"} value={projectsCount} icon={<Layout color="#93c5fd" size={24} />} color="59, 130, 246" />
-        {isAdmin && <Card title="Team Members" value={teamMembersCount} icon={<Users color="#c4b5fd" size={24} />} color="139, 92, 246" />}
-        <Card title={isAdmin ? "Total Tasks" : "Assigned Tasks"} value={totalTasksCount} icon={<List color="#d8b4fe" size={24} />} color="168, 85, 247" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+        <StatCard title={isAdmin ? "Total Projects" : "Assigned Projects"} value={projectsCount} icon={<Layout className="w-6 h-6 text-blue-400" />} bgColorClass="bg-blue-500/10" />
+        {isAdmin && <StatCard title="Team Members" value={teamMembersCount} icon={<Users className="w-6 h-6 text-purple-400" />} bgColorClass="bg-purple-500/10" />}
+        <StatCard title={isAdmin ? "Total Tasks" : "Assigned Tasks"} value={totalTasksCount} icon={<List className="w-6 h-6 text-fuchsia-400" />} bgColorClass="bg-fuchsia-500/10" />
         
-        <Card title="Pending" value={pendingCount} icon={<Clock color="#cbd5e1" size={24} />} color="148, 163, 184" />
-        <Card title="In Progress" value={inProgressCount} icon={<PlayCircle color="#fcd34d" size={24} />} color="245, 158, 11" />
-        <Card title="Completed" value={doneCount} icon={<CheckCircle color="#6ee7b7" size={24} />} color="16, 185, 129" />
-        <Card title="Overdue" value={overdueCount} icon={<AlertCircle color="#fca5a5" size={24} />} color="239, 68, 68" />
+        <StatCard title="Pending" value={pendingCount} icon={<Clock className="w-6 h-6 text-slate-400" />} bgColorClass="bg-slate-500/10" />
+        <StatCard title="In Progress" value={inProgressCount} icon={<PlayCircle className="w-6 h-6 text-amber-400" />} bgColorClass="bg-amber-500/10" />
+        <StatCard title="Completed" value={doneCount} icon={<CheckCircle className="w-6 h-6 text-emerald-400" />} bgColorClass="bg-emerald-500/10" />
+        <StatCard title="Overdue" value={overdueCount} icon={<AlertCircle className="w-6 h-6 text-red-400" />} bgColorClass="bg-red-500/10" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left Column: Admin Project Progress or Member Personal Progress */}
-        <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0 }}>{isAdmin ? 'Project Progress' : 'Personal Progress'}</h3>
-            {isAdmin && <Link to="/projects" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>View Projects</Link>}
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {isAdmin ? (
-              stats.projectProgress?.length > 0 ? (
-                stats.projectProgress.slice(0, 5).map(proj => (
-                  <div key={proj.projectId} style={{ padding: '1rem', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <Link to={`/projects/${proj.projectId}`} style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 500 }}>{proj.title}</Link>
-                      <span style={{ fontSize: '0.85rem' }}>{proj.progress}%</span>
-                    </div>
-                    <div style={{ width: '100%', height: '6px', background: 'var(--glass-border)', borderRadius: '99px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${proj.progress}%`, background: 'var(--primary)', transition: 'width 0.5s ease' }}></div>
-                    </div>
-                  </div>
-                ))
-              ) : <p>No projects found.</p>
-            ) : (
-              <div style={{ padding: '2rem', textAlign: 'center' }}>
-                <TrendingUp size={48} color="var(--primary)" style={{ marginBottom: '1rem', opacity: 0.8 }} />
-                <h2 style={{ fontSize: '3rem', margin: '0 0 0.5rem 0' }}>{progress}%</h2>
-                <p style={{ color: 'var(--text-muted)' }}>of your assigned tasks are completed</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column: Recent Tasks (Admin) / Upcoming Tasks */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {isAdmin && (
-            <div className="glass-panel" style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ margin: 0 }}>Recent Tasks</h3>
-                <Link to="/tasks" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem' }}>View All</Link>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {recentTasks?.length > 0 ? (
-                  recentTasks.map(task => (
-                    <div key={task._id} style={{ padding: '1rem', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '8px', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem' }}>{task.title}</h4>
-                        <p style={{ fontSize: '0.8rem', margin: 0 }}>Project: {task.projectId?.title}</p>
+        <Card className="border-white/10 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xl">{isAdmin ? 'Project Progress' : 'Personal Progress'}</CardTitle>
+            {isAdmin && <Link to="/projects" className="text-sm font-medium text-primary hover:underline">View Projects</Link>}
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 mt-4">
+              {isAdmin ? (
+                stats.projectProgress?.length > 0 ? (
+                  stats.projectProgress.slice(0, 5).map(proj => (
+                    <div key={proj.projectId} className="p-4 rounded-lg bg-background/50 border border-white/5">
+                      <div className="flex justify-between items-center mb-2">
+                        <Link to={`/projects/${proj.projectId}`} className="font-semibold hover:underline">{proj.title}</Link>
+                        <span className="text-sm font-medium">{proj.progress}%</span>
                       </div>
-                      <span className={`badge ${task.status === 'completed' ? 'badge-done' : task.status === 'in-progress' ? 'badge-progress' : 'badge-todo'}`}>
-                        {task.status}
-                      </span>
+                      <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${proj.progress}%` }}></div>
+                      </div>
                     </div>
                   ))
-                ) : <p>No recent tasks found.</p>}
-              </div>
+                ) : <p className="text-muted-foreground text-sm">No projects found.</p>
+              ) : (
+                <div className="py-12 text-center">
+                  <TrendingUp className="w-16 h-16 text-primary/80 mx-auto mb-4" />
+                  <h2 className="text-5xl font-bold tracking-tighter mb-2">{progress}%</h2>
+                  <p className="text-muted-foreground font-medium">of your assigned tasks are completed</p>
+                </div>
+              )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Right Column: Recent Tasks (Admin) / Upcoming Tasks */}
+        <div className="space-y-6">
+          {isAdmin && (
+            <Card className="border-white/10 bg-card/50 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xl">Recent Tasks</CardTitle>
+                <Link to="/tasks" className="text-sm font-medium text-primary hover:underline">View All</Link>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-3 mt-4">
+                  {recentTasks?.length > 0 ? (
+                    recentTasks.map(task => (
+                      <div key={task._id} className="p-4 rounded-lg bg-background/50 border border-white/5 flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium text-sm mb-1">{task.title}</h4>
+                          <p className="text-xs text-muted-foreground">Project: {task.projectId?.title}</p>
+                        </div>
+                        <Badge variant={getStatusBadgeVariant(task.status)} className="capitalize">
+                          {task.status.replace('-', ' ')}
+                        </Badge>
+                      </div>
+                    ))
+                  ) : <p className="text-muted-foreground text-sm">No recent tasks found.</p>}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0 }}>Upcoming Due Tasks</h3>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {upcomingTasks?.length > 0 ? (
-                upcomingTasks.map(task => (
-                  <div key={task._id} style={{ padding: '1rem', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '8px', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem' }}>{task.title}</h4>
-                      <p style={{ fontSize: '0.8rem', margin: 0 }}>Project: {task.projectId?.title}</p>
-                      <p style={{ fontSize: '0.8rem', margin: '0.25rem 0 0 0', color: 'var(--text-muted)' }}>Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
+          <Card className="border-white/10 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">Upcoming Due Tasks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-3 mt-4">
+                {upcomingTasks?.length > 0 ? (
+                  upcomingTasks.map(task => (
+                    <div key={task._id} className="p-4 rounded-lg bg-background/50 border border-white/5 flex justify-between items-center">
+                      <div>
+                        <h4 className="font-medium text-sm mb-1">{task.title}</h4>
+                        <p className="text-xs text-muted-foreground">Project: {task.projectId?.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                      <Badge variant={getStatusBadgeVariant(task.status)} className="capitalize">
+                        {task.status.replace('-', ' ')}
+                      </Badge>
                     </div>
-                    <span className={`badge ${task.status === 'completed' ? 'badge-done' : task.status === 'in-progress' ? 'badge-progress' : 'badge-todo'}`}>
-                      {task.status}
-                    </span>
-                  </div>
-                ))
-              ) : <p>No upcoming tasks found.</p>}
-            </div>
-          </div>
+                  ))
+                ) : <p className="text-muted-foreground text-sm">No upcoming tasks found.</p>}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
       </div>

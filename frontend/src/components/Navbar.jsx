@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { LogOut, User as UserIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
@@ -13,28 +14,38 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="container">
-        <Link to="/" className="navbar-brand">TaskMaster</Link>
-        <div className="nav-links">
+    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
+        <Link to="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+          TaskMaster
+        </Link>
+        <div className="flex items-center gap-6">
           {user ? (
             <>
-              <Link to="/projects" className="nav-link">Projects</Link>
+              <Link to="/projects" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                Projects
+              </Link>
               {user.role === 'admin' && (
-                <Link to="/tasks" className="nav-link">Tasks</Link>
+                <Link to="/tasks" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                  Tasks
+                </Link>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '1rem', color: 'var(--text-main)' }}>
-                <UserIcon size={18} />
+              <div className="flex items-center gap-2 ml-4 text-sm font-medium text-foreground">
+                <UserIcon className="h-4 w-4" />
                 <span>{user.name} ({user.role})</span>
               </div>
-              <button onClick={handleLogout} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem' }}>
-                <LogOut size={16} /> Logout
-              </button>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" /> Logout
+              </Button>
             </>
           ) : (
             <>
-              <Link to="/login" className="nav-link">Login</Link>
-              <Link to="/signup" className="btn btn-primary">Sign Up</Link>
+              <Link to="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                Login
+              </Link>
+              <Link to="/signup">
+                <Button>Sign Up</Button>
+              </Link>
             </>
           )}
         </div>

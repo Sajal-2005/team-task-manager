@@ -3,6 +3,10 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 
 const Projects = () => {
   const { user } = useContext(AuthContext);
@@ -42,10 +46,8 @@ const Projects = () => {
     e.preventDefault();
     setError('');
     try {
-      // 1. Create project with title & description
       const projRes = await api.post('/projects', { title: newProject.title, description: newProject.description });
       
-      // 2. Add members if any were selected
       if (newProject.members.length > 0) {
         await api.post(`/projects/${projRes.data._id}/members`, { members: newProject.members });
       }
@@ -65,65 +67,91 @@ const Projects = () => {
   };
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Projects</h2>
+    <div className="animate-fade-in space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold tracking-tight">Projects</h2>
         {user.role === 'admin' && (
-          <button className="btn btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Plus size={18} /> New Project
-          </button>
+          <Button onClick={() => setShowModal(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> New Project
+          </Button>
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map(proj => (
-          <div key={proj._id} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ marginBottom: '0.5rem' }}>
-              <Link to={`/projects/${proj._id}`} style={{ color: 'var(--text-main)', textDecoration: 'none' }}>{proj.title}</Link>
-            </h3>
-            <p style={{ flex: 1, fontSize: '0.9rem', marginBottom: '1.5rem' }}>{proj.description}</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{proj.teamMembers?.length || 0} Members</span>
-              <Link to={`/projects/${proj._id}`} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>View Details</Link>
-            </div>
-          </div>
+          <Card key={proj._id} className="flex flex-col bg-card/50 backdrop-blur-sm border-white/10 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <CardTitle>
+                <Link to={`/projects/${proj._id}`} className="hover:underline">{proj.title}</Link>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <CardDescription className="text-sm">
+                {proj.description || 'No description provided.'}
+              </CardDescription>
+            </CardContent>
+            <CardFooter className="flex justify-between items-center border-t border-white/5 pt-4">
+              <span className="text-xs text-muted-foreground font-medium">{proj.teamMembers?.length || 0} Members</span>
+              <Link to={`/projects/${proj._id}`}>
+                <Button variant="outline" size="sm">View Details</Button>
+              </Link>
+            </CardFooter>
+          </Card>
         ))}
+        
         {projects.length === 0 && (
-          <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', border: '1px dashed var(--glass-border)' }}>
-            <h3 style={{ color: 'var(--text-muted)' }}>No projects found.</h3>
-            {user.role === 'admin' && <p style={{ color: 'var(--text-muted)' }}>Click "New Project" to get started.</p>}
+          <div className="col-span-full py-16 text-center bg-background/50 rounded-xl border border-dashed border-white/20">
+            <h3 className="text-lg font-medium text-muted-foreground mb-1">No projects found.</h3>
+            {user.role === 'admin' && <p className="text-sm text-muted-foreground">Click "New Project" to get started.</p>}
           </div>
         )}
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ padding: '2rem', width: '100%', maxWidth: '500px' }}>
-            <h3 style={{ marginBottom: '1.5rem' }}>Create New Project</h3>
-            {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem' }}>{error}</p>}
-            <form onSubmit={handleCreateProject}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Title</label>
-                <input type="text" value={newProject.title} onChange={e => setNewProject({...newProject, title: e.target.value})} required />
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label>Description</label>
-                <textarea value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} rows="3" />
-              </div>
-              <div style={{ marginBottom: '2rem' }}>
-                <label>Assign Members (Hold Ctrl/Cmd to select multiple)</label>
-                <select multiple value={newProject.members} onChange={handleMemberChange} style={{ height: '100px' }}>
-                  {users.map(u => (
-                    <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create</button>
-              </div>
-            </form>
-          </div>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md bg-card/95 shadow-2xl border-white/10">
+            <CardHeader>
+              <CardTitle>Create New Project</CardTitle>
+              <CardDescription>Add a new project to your workspace.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {error && <div className="text-sm text-destructive mb-4">{error}</div>}
+              <form onSubmit={handleCreateProject} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input id="title" type="text" value={newProject.title} onChange={e => setNewProject({...newProject, title: e.target.value})} required className="bg-background/50" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="desc">Description</Label>
+                  <textarea 
+                    id="desc"
+                    value={newProject.description} 
+                    onChange={e => setNewProject({...newProject, description: e.target.value})} 
+                    rows="3" 
+                    className="flex min-h-[80px] w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="members">Assign Members (Hold Ctrl/Cmd to select multiple)</Label>
+                  <select 
+                    id="members"
+                    multiple 
+                    value={newProject.members} 
+                    onChange={handleMemberChange} 
+                    className="flex h-32 w-full rounded-md border border-white/10 bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    {users.map(u => (
+                      <option key={u._id} value={u._id} className="py-1">{u.name} ({u.email})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+                  <Button type="submit">Create</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

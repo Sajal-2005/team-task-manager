@@ -2,6 +2,10 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { LogIn } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -25,44 +29,60 @@ const Login = () => {
   };
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: '400px', margin: '4rem auto' }}>
-      <div className="glass-panel" style={{ padding: '2.5rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <LogIn size={48} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-          <h2>Welcome Back</h2>
-          <p>Login to manage your tasks and projects</p>
-        </div>
-        
-        {error && <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label>Email Address</label>
-            <input 
-              type="email" 
-              placeholder="you@example.com" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
-            />
+    <div className="animate-fade-in flex items-center justify-center min-h-[70vh] py-12">
+      <Card className="w-full max-w-md bg-card/60 backdrop-blur-xl border-white/10 shadow-2xl">
+        <CardHeader className="space-y-3 items-center text-center pb-6">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
+            <LogIn className="w-8 h-8" />
           </div>
-          <div style={{ marginBottom: '2rem' }}>
-            <label>Password</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
-            />
-          </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Login</button>
-        </form>
+          <CardTitle className="text-2xl font-bold tracking-tight">Welcome Back</CardTitle>
+          <CardDescription className="text-base">Login to manage your tasks and projects</CardDescription>
+        </CardHeader>
         
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem' }}>
-          <p>Don't have an account? <Link to="/signup" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Sign up</Link></p>
-        </div>
-      </div>
+        <CardContent>
+          {error && (
+            <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-lg mb-6 text-sm font-medium border border-destructive/20 text-center">
+              {error}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input 
+                id="email"
+                type="email" 
+                placeholder="you@example.com" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+                className="bg-background/50 border-white/10 focus-visible:ring-primary h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password"
+                type="password" 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                className="bg-background/50 border-white/10 focus-visible:ring-primary h-11"
+              />
+            </div>
+            <Button type="submit" className="w-full h-11 text-base font-semibold mt-2">
+              Login
+            </Button>
+          </form>
+        </CardContent>
+        
+        <CardFooter className="justify-center border-t border-white/5 pt-6 pb-6">
+          <p className="text-sm text-muted-foreground">
+            Don't have an account? <Link to="/signup" className="text-primary hover:underline font-medium">Sign up</Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
